@@ -5,67 +5,120 @@
 *    FreedomCorp Dashboard
 */
 
-var svg = d3.select("svg"),
-    margin = {top: 20, right: 20, bottom: 30, left: 50},
-    width = svg.attr("width") - margin.left - margin.right,
-    height = svg.attr("height") - margin.top - margin.bottom;
+class StackedAreaChart{
+    constructor(_parentElement){
+        this.parentElement = _parentElement
+        this.initVis()
+    }
 
-var parseDate = d3.timeParse("%Y %b %d");
+    initVis(){
+        let vis = this
 
-var x = d3.scaleTime().range([0, width]),
-    y = d3.scaleLinear().range([height, 0]),
-    z = d3.scaleOrdinal(d3.schemeCategory10);
+        vis.t = d3.transition().duration(500)
 
-var stack = d3.stack();
+        vis.margin = {top: 10, right: 20, bottom: 100, left: 100}
+        vis.width = 800 - vis.margin.left - vis.margin.right
+        vis.height = 500 - vis.margin.top - vis.margin.bottom
 
-var area = d3.area()
-    .x(function(d, i) { return x(d.data.date); })
-    .y0(function(d) { return y(d[0]); })
-    .y1(function(d) { return y(d[1]); });
+        vis.g = d3.select(vis.parentElement)
+            .append("svg")
+            .attr('width',vis.width)
+            .attr('height',vis.height)
+            .append("g")
+            .attr("transform", "translate(" + vis.margin.left + "," + vis.margin.top + ")");
 
-var g = svg.append("g")
-    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+                
+        vis.x = d3.scaleTime().range([0, vis.width])
+        vis.y = d3.scaleLinear().range([vis.height, 0])
+        vis.z = d3.scaleOrdinal(d3.schemePastel1)
 
-d3.tsv("data.tsv", type).then(function(error, data) {
-  if (error) throw error;
+        vis.area = d3.area()
+            .x(function(d) {
+                return vis.x(d.data.date); })
+            .y0(function(d) { return vis.y(d[0]); })
+            .y1(function(d) { return vis.y(d[1]); })
 
-  var keys = data.columns.slice(1);
+        
+        vis.stack = d3.stack()
+                        .keys(["west","south","midwest","northeast"])
 
-  x.domain(d3.extent(data, function(d) { return d.date; }));
-  z.domain(keys);
-  stack.keys(keys);
+        console.log(vis.height)
 
-  var layer = g.selectAll(".layer")
-    .data(stack(data))
-    .enter().append("g")
-      .attr("class", "layer");
+        vis.xAxis = vis.g.append("g")
+            .attr("class", "axis axis--x")
+            .attr("transform", `translate(0,${vis.height})`)
+            
+            
+        vis.yAxis = vis.g.append("g")
+                .attr("class", "axis axis--y")
+                        
 
-  layer.append("path")
-      .attr("class", "area")
-      .style("fill", function(d) { return z(d.key); })
-      .attr("d", area);
+        vis.wrangleData()
+    }
 
-  layer.filter(function(d) { return d[d.length - 1][1] - d[d.length - 1][0] > 0.01; })
-    .append("text")
-      .attr("x", width - 6)
-      .attr("y", function(d) { return y((d[d.length - 1][0] + d[d.length - 1][1]) / 2); })
-      .attr("dy", ".35em")
-      .style("font", "10px sans-serif")
-      .style("text-anchor", "end")
-      .text(function(d) { return d.key; });
+    wrangleData(){
+        let vis = this
 
-  g.append("g")
-      .attr("class", "axis axis--x")
-      .attr("transform", "translate(0," + height + ")")
-      .call(d3.axisBottom(x));
+        vis.property = $("#var-select").val()
+        vis.nestedData = d3.nest()
+            .key(d=>d.date)
+            .entries(filteredData)
 
-  g.append("g")
-      .attr("class", "axis axis--y")
-      .call(d3.axisLeft(y).ticks(10, "%"));
-});
+        vis.data = vis.nestedData.map(d=>{
+            let obj = {}
+            obj.date = new Date(d.key)
+            obj.west = 0
+            obj.south = 0
+            obj.midwest = 0
+            obj.northeast = 0
 
-function type(d, i, columns) {
-  d.date = parseDate(d.date);
-  for (var i = 1, n = columns.length; i < n; ++i) d[columns[i]] = d[columns[i]] / 100;
-  return d;
+            d.values.forEach(e=>{
+                if(e.team==="west")obj.west+=e[vis.property]
+                else if(e.team==="south")obj.south+=e[vis.property]
+                else if(e.team==="midwest")obj.midwest+=e[vis.property]
+                else if(e.team==="northeast")obj.northeast+=e[vis.property]
+            })
+            return obj
+        })
+        vis.updateVis()
+    }
+
+    updateVis(){
+        let vis = this
+        
+        vis.x.domain(d3.extent(filteredData,d=>d.date));
+        vis.max = d3.max(vis.data.map(d=>{
+            return({
+                date:d.date,
+                value:d.south+d.northeast+d.midwest+d.west
+            })
+        }),d=>d.value)*1.05
+
+        vis.y.domain([0,vis.max])
+
+        vis.layer = vis.g.selectAll(".layer").data(vis.stack(vis.data))
+
+        vis.layer.exit().transition(vis.t).remove()
+
+        vis.layer.enter()
+            .append("path")
+            .attr("class","layer")
+            .attr("fill",d=>vis.z(d.key))
+            .merge(vis.layer)
+            .transition(vis.t)
+            .attr("d",vis.area)
+
+        // console.log(vis.stack(vis.data))
+
+        // vis.layer.filter(function(d) { return d[d.length - 1][1] - d[d.length - 1][0] > 0.01; })
+        //     .append("text")
+        //     .attr("x", vis.width - 6)
+        //     .attr("y", function(d) { return y((d[d.length - 1][0] + d[d.length - 1][1]) / 2); })
+        //     .attr("dy", ".35em")
+        //     .style("font", "10px sans-serif")
+        //     .style("text-anchor", "end")
+        //     .text(function(d) { return d.key; });
+        vis.xAxis.transition(vis.t).call(d3.axisBottom(vis.x))
+        vis.yAxis.transition(vis.t).call(d3.axisLeft(vis.y).ticks(5))
+    }
 }
