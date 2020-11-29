@@ -1,10 +1,3 @@
-/*
-*    stackedAreaChart.js
-*    Source: https://bl.ocks.org/mbostock/3885211
-*    Mastering Data Visualization with D3.js
-*    FreedomCorp Dashboard
-*/
-
 class StackedAreaChart{
     constructor(_parentElement){
         this.parentElement = _parentElement
@@ -16,14 +9,14 @@ class StackedAreaChart{
 
         vis.t = d3.transition().duration(500)
 
-        vis.margin = {top: 10, right: 20, bottom: 100, left: 100}
+        vis.margin = {top: 80, right: 20, bottom: 100, left: 100}
         vis.width = 800 - vis.margin.left - vis.margin.right
         vis.height = 500 - vis.margin.top - vis.margin.bottom
 
         vis.g = d3.select(vis.parentElement)
             .append("svg")
-            .attr('width',vis.width)
-            .attr('height',vis.height)
+            .attr('width',vis.width+vis.margin.left+vis.margin.right)
+            .attr('height',vis.height+vis.margin.top+vis.margin.bottom)
             .append("g")
             .attr("transform", "translate(" + vis.margin.left + "," + vis.margin.top + ")");
 
@@ -44,15 +37,16 @@ class StackedAreaChart{
 
         console.log(vis.height)
 
+            
         vis.xAxis = vis.g.append("g")
-            .attr("class", "axis axis--x")
-            .attr("transform", `translate(0,${vis.height})`)
-            
-            
+                .attr("class","axis axis--x")
+                .attr("transform",`translate(0,${vis.height})`)
+
         vis.yAxis = vis.g.append("g")
                 .attr("class", "axis axis--y")
                         
 
+        vis.addLegend()
         vis.wrangleData()
     }
 
@@ -86,7 +80,8 @@ class StackedAreaChart{
     updateVis(){
         let vis = this
         
-        vis.x.domain(d3.extent(filteredData,d=>d.date));
+        vis.x.domain(d3.extent(vis.data,d=>d.date))
+
         vis.max = d3.max(vis.data.map(d=>{
             return({
                 date:d.date,
@@ -108,17 +103,30 @@ class StackedAreaChart{
             .transition(vis.t)
             .attr("d",vis.area)
 
-        // console.log(vis.stack(vis.data))
-
-        // vis.layer.filter(function(d) { return d[d.length - 1][1] - d[d.length - 1][0] > 0.01; })
-        //     .append("text")
-        //     .attr("x", vis.width - 6)
-        //     .attr("y", function(d) { return y((d[d.length - 1][0] + d[d.length - 1][1]) / 2); })
-        //     .attr("dy", ".35em")
-        //     .style("font", "10px sans-serif")
-        //     .style("text-anchor", "end")
-        //     .text(function(d) { return d.key; });
-        vis.xAxis.transition(vis.t).call(d3.axisBottom(vis.x))
+        vis.xAxis.transition(vis.t).call(d3.axisBottom(vis.x).ticks(10))
         vis.yAxis.transition(vis.t).call(d3.axisLeft(vis.y).ticks(5))
+    }
+
+    addLegend(){
+        let vis = this
+
+        vis.legend = vis.g.append("g")
+                    .attr('width',vis.width)
+                    .attr('height',30)
+        vis.directions = ["northeast","west","south","midwest"]
+
+        vis.directions.forEach((direction,index)=>{
+            vis.legendCol = vis.legend.append("g")
+                .attr("transform",`translate(${(vis.width/4)*index+60},-30)`)
+            vis.legendCol.append("text")
+                .attr('font-size','15px')
+                .text(direction.charAt(0).toUpperCase() + direction.slice(1))
+            vis.legendCol.append("rect")
+                .attr('width',10)
+                .attr('height',10)
+                .attr('transform',`translate(-15,-10)`)
+                .attr('fill',vis.z(direction))
+        })
+
     }
 }

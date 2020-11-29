@@ -23,7 +23,7 @@ DonutChart.prototype.initVis = function(){
     vis.pie = d3.pie()
         .padAngle(0.03)
         .value(function(d) { return d.data[vis.variable]; })
-        .sort(null);
+        .sort(null)
 
     vis.arc = d3.arc()
         .innerRadius(vis.radius - 60)
