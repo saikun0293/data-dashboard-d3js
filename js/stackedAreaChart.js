@@ -35,7 +35,6 @@ class StackedAreaChart{
         vis.stack = d3.stack()
                         .keys(["west","south","midwest","northeast"])
 
-        console.log(vis.height)
 
             
         vis.xAxis = vis.g.append("g")

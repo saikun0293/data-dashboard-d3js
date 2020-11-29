@@ -5,64 +5,79 @@
 *    FreedomCorp Dashboard
 */
 
-DonutChart = function(_parentElement, _variable){
-    this.parentElement = _parentElement;
-    this.variable = _variable;
-
-    this.initVis();
+DonutChart = function(_parentElement){
+    this.parentElement = _parentElement
+    this.initVis()
 };
 
 DonutChart.prototype.initVis = function(){
-    var vis = this;
+    var vis = this
 
-    vis.margin = { left:0, right:0, top:40, bottom:0 };
-    vis.width = 250 - vis.margin.left - vis.margin.right;
-    vis.height = 250 - vis.margin.top - vis.margin.bottom;
-    vis.radius = Math.min(vis.width, vis.height) / 2;
+    vis.margin = { left:60, right:100, top:40, bottom:0 }
+    vis.width = 350 - vis.margin.left - vis.margin.right
+    vis.height = 250 - vis.margin.top - vis.margin.bottom
+    vis.radius = Math.min(vis.width, vis.height) / 2
+
+    vis.keys = ["large","medium","small"]
+
+    vis.color = d3.scaleOrdinal()
+        .domain(vis.keys)
+        .range(d3.schemeAccent)
 
     vis.pie = d3.pie()
         .padAngle(0.03)
-        .value(function(d) { return d.data[vis.variable]; })
+        .value(d=>d.value)
         .sort(null)
 
     vis.arc = d3.arc()
         .innerRadius(vis.radius - 60)
-        .outerRadius(vis.radius - 30);
+        .outerRadius(vis.radius - 30)
 
     vis.svg = d3.select(vis.parentElement)
         .append("svg")
         .attr("width", vis.width + vis.margin.left + vis.margin.right)
-        .attr("height", vis.height + vis.margin.top + vis.margin.bottom);
+        .attr("height", vis.height + vis.margin.top + vis.margin.bottom)
+
     vis.g = vis.svg.append("g")
         .attr("transform", "translate(" + (vis.margin.left + (vis.width / 2)) + 
-            ", " + (vis.margin.top + (vis.height / 2)) + ")");
+            ", " + (vis.margin.top + (vis.height / 2)) + ")")
 
     vis.g.append("text")
         .attr("y", -vis.height/2)
         .attr("x", -vis.width/2)
         .attr("font-size", "15px")
         .attr("text-anchor", "start")
-        .text(vis.variable == "market_cap" ? 
-            "Market Capitalization" : "24 Hour Trading Volume");
+        .text("Company Size")
 
-    vis.wrangleData();
+
+    vis.addLegend()
+    vis.wrangleData()
 }
 
 DonutChart.prototype.wrangleData = function(){
-    var vis = this;
+    var vis = this
 
-    vis.activeCoin = $("#coin-select").val();
+    vis.nestedData = d3.nest()
+        .key(d=>d["company_size"])
+        .entries(filteredData)
 
-    vis.updateVis();
+    vis.data = vis.nestedData.map(d=>{
+        let obj = {}
+        obj.company_size = d.key
+        obj.value = d.values.length
+        return obj
+    })
+
+    vis.updateVis()
 }
 
 DonutChart.prototype.updateVis = function(){
-    var vis = this;
+    var vis = this
 
     vis.path = vis.g.selectAll("path");
 
-    vis.data0 = vis.path.data();
-    vis.data1 = vis.pie(donutData);
+    vis.data0 = vis.path.data()
+    vis.data1 = vis.pie(vis.data)
 
     // JOIN elements with new data.
     vis.path = vis.path.data(vis.data1, key);
@@ -79,25 +94,18 @@ DonutChart.prototype.updateVis = function(){
     vis.path.transition()
         .duration(750)
         .attrTween("d", arcTween)
-        .attr("fill-opacity", function(d) {
-            return (d.data.coin == vis.activeCoin) ? 1 : 0.3;
-        })
 
     // ENTER new elements in the array.
     vis.path.enter()
         .append("path")
         .each(function(d, i) { this._current = findNeighborArc(i, vis.data0, vis.data1, key) || d; }) 
-        .attr("fill", function(d) {  return color(d.data.coin) })
-        .attr("fill-opacity", function(d) {
-            return (d.data.coin == vis.activeCoin) ? 1 : 0.3;
-        })
-        .on("click", arcClicked)
+        .attr("fill",d=>vis.color(d.data.company_size))
         .transition()
         .duration(750)
             .attrTween("d", arcTween);
 
     function key(d){
-        return d.data.coin;
+        return d.company_size
     }
 
     function findNeighborArc(i, data0, data1, key) {
@@ -135,4 +143,27 @@ DonutChart.prototype.updateVis = function(){
         return function(t) { return vis.arc(i(t)); };
     }
 
+}
+
+DonutChart.prototype.addLegend=function(){
+    let vis = this
+    vis.legend = vis.svg
+        .append("g")
+        .attr('transform',`translate(${vis.width+40},${vis.margin.top})`)
+    
+    vis.keys.forEach((key,index)=>{
+        vis.legendRow = vis.legend.append("g")    
+            .attr('transform',`translate(80,${80+index*30})`)
+        
+        vis.legendRow.append("text")
+            .attr('font-size','15px')
+            .attr('text-anchor','end')
+            .text(key)
+
+        vis.legendRow.append("rect")
+            .attr('width',10)
+            .attr('height',10)
+            .attr('transform',`translate(10,-10)`)
+            .attr('fill',vis.color(key))
+    })
 }
