@@ -68,6 +68,8 @@ DonutChart.prototype.wrangleData = function(){
         return obj
     })
 
+    console.log(vis.data)
+
     vis.updateVis()
 }
 
@@ -98,7 +100,7 @@ DonutChart.prototype.updateVis = function(){
     // ENTER new elements in the array.
     vis.path.enter()
         .append("path")
-        .each(function(d, i) { this._current = findNeighborArc(i, vis.data0, vis.data1, key) || d; }) 
+        .each(function(d, i) { this._current = findNeighborArc(i,vis.data0,vis.data1, key) || d; }) 
         .attr("fill",d=>vis.color(d.data.company_size))
         .transition()
         .duration(750)
@@ -110,29 +112,29 @@ DonutChart.prototype.updateVis = function(){
 
     function findNeighborArc(i, data0, data1, key) {
         var d;
-        return (d = findPreceding(i, vis.data0, vis.data1, key)) ? {startAngle: d.endAngle, endAngle: d.endAngle}
-            : (d = findFollowing(i, vis.data0, vis.data1, key)) ? {startAngle: d.startAngle, endAngle: d.startAngle}
+        return (d = findPreceding(i, data0, data1, key)) ? {startAngle: d.endAngle, endAngle: d.endAngle}
+            : (d = findFollowing(i, data0, data1, key)) ? {startAngle: d.startAngle, endAngle: d.startAngle}
             : null;
     }
 
     // Find the element in data0 that joins the highest preceding element in data1.
     function findPreceding(i, data0, data1, key) {
-        var m = vis.data0.length;
+        var m = data0.length;
         while (--i >= 0) {
-            var k = key(vis.data1[i]);
+            var k = key(data1[i]);
             for (var j = 0; j < m; ++j) {
-                if (key(vis.data0[j]) === k) return vis.data0[j];
+                if (key(data0[j]) === k) return data0[j];
             }
         }
     }
 
     // Find the element in data0 that joins the lowest following element in data1.
     function findFollowing(i, data0, data1, key) {
-        var n = vis.data1.length, m = vis.data0.length;
+        var n = data1.length, m = data0.length;
         while (++i < n) {
-            var k = key(vis.data1[i]);
+            var k = key(data1[i]);
             for (var j = 0; j < m; ++j) {
-                if (key(vis.data0[j]) === k) return vis.data0[j];
+                if (key(data0[j]) === k) return data0[j];
             }
         }
     }

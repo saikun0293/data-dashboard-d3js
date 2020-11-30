@@ -1,9 +1,3 @@
-/*
-*    timeline.js
-*    Mastering Data Visualization with D3.js
-*    FreedomCorp Dashboard
-*/
-
 Timeline = function(_parentElement){
     this.parentElement = _parentElement;
 
@@ -13,7 +7,7 @@ Timeline = function(_parentElement){
 Timeline.prototype.initVis = function(){
     var vis = this;
 
-    vis.margin = {top: 0, right: 100, bottom: 20, left: 80};
+    vis.margin = {top: 10, right: 20, bottom: 0, left: 100};
     vis.width = 800 - vis.margin.left - vis.margin.right;
     vis.height = 100 - vis.margin.top - vis.margin.bottom;
 
@@ -53,17 +47,16 @@ Timeline.prototype.initVis = function(){
         .attr("class", "brush")
         .call(vis.brush);
 
-    vis.wrangleData();
+    vis.wrangleData()
 };
 
 Timeline.prototype.wrangleData = function(){
-    var vis = this;
-
-    vis.variable = "call_revenue"
+    var vis = this  
+    vis.variable = $("#var-select").val()
 
     vis.dayNest = d3.nest()
         .key(function(d){ return formatTime(d.date); })
-        .entries(calls)
+        .entries(filteredData)
 
     vis.dataFiltered = vis.dayNest
         .map(function(day){
@@ -73,16 +66,14 @@ Timeline.prototype.wrangleData = function(){
                     return accumulator + current[vis.variable]
                 }, 0)               
             }
-
         })
-
-    vis.updateVis();
+    vis.updateVis()
 }
 
 Timeline.prototype.updateVis = function(){
-    var vis = this;
+    var vis = this
 
-    vis.x.domain(d3.extent(vis.dataFiltered, (d) => { return parseTime(d.date); }));
+    vis.x.domain(d3.extent(vis.dataFiltered, (d) => { return parseTime(d.date)}))
     vis.y.domain([0, d3.max(vis.dataFiltered, (d) => d.sum) ])
 
     vis.xAxisCall.scale(vis.x)
@@ -90,14 +81,14 @@ Timeline.prototype.updateVis = function(){
     vis.xAxis.transition(vis.t()).call(vis.xAxisCall)
 
     vis.area0 = d3.area()
-        .x((d) => { return vis.x(parseTime(d.date)); })
+        .x((d) =>vis.x(parseTime(d.date)))
         .y0(vis.height)
         .y1(vis.height);
 
     vis.area = d3.area()
-        .x((d) => { return vis.x(parseTime(d.date)); })
+        .x((d) =>vis.x(parseTime(d.date)))
         .y0(vis.height)
-        .y1((d) => { return vis.y(d.sum); })
+        .y1((d) =>vis.y(d.sum))
 
     vis.areaPath
         .data([vis.dataFiltered])

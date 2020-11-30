@@ -58,8 +58,6 @@ class BarChart{
       obj[vis.variable]/=d.values.length
       return obj
     })
-
-    console.log(vis.data)
     vis.updateVis()
   }
 
