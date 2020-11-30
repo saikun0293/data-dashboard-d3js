@@ -13,9 +13,9 @@ DonutChart = function(_parentElement){
 DonutChart.prototype.initVis = function(){
     var vis = this
 
-    vis.margin = { left:60, right:100, top:40, bottom:0 }
+    vis.margin = { left:60, right:100, top:0, bottom:0 }
     vis.width = 350 - vis.margin.left - vis.margin.right
-    vis.height = 250 - vis.margin.top - vis.margin.bottom
+    vis.height = 200 - vis.margin.top - vis.margin.bottom
     vis.radius = Math.min(vis.width, vis.height) / 2
 
     vis.keys = ["large","medium","small"]
@@ -43,8 +43,8 @@ DonutChart.prototype.initVis = function(){
             ", " + (vis.margin.top + (vis.height / 2)) + ")")
 
     vis.g.append("text")
-        .attr("y", -vis.height/2)
-        .attr("x", -vis.width/2)
+        .attr("y",-85)
+        .attr("x",-vis.width/2+10)
         .attr("font-size", "15px")
         .attr("text-anchor", "start")
         .text("Company Size")
@@ -158,7 +158,7 @@ DonutChart.prototype.addLegend=function(){
         vis.legendRow.append("text")
             .attr('font-size','15px')
             .attr('text-anchor','end')
-            .text(key)
+            .text(key.charAt(0).toUpperCase() + key.slice(1))
 
         vis.legendRow.append("rect")
             .attr('width',10)
