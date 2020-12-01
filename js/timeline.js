@@ -7,7 +7,7 @@ Timeline = function(_parentElement){
 Timeline.prototype.initVis = function(){
     var vis = this;
 
-    vis.margin = {top: 10, right: 20, bottom: 0, left: 100};
+    vis.margin = {top: 0, right: 20, bottom: 30, left: 100};
     vis.width = 800 - vis.margin.left - vis.margin.right;
     vis.height = 100 - vis.margin.top - vis.margin.bottom;
 
@@ -27,7 +27,7 @@ Timeline.prototype.initVis = function(){
         .range([vis.height, 0]);
 
     vis.xAxisCall = d3.axisBottom()
-        .ticks(4);
+        .ticks(4)
 
     vis.xAxis = vis.g.append("g")
         .attr("class", "x axis")
@@ -76,9 +76,7 @@ Timeline.prototype.updateVis = function(){
     vis.x.domain(d3.extent(vis.dataFiltered, (d) => { return parseTime(d.date)}))
     vis.y.domain([0, d3.max(vis.dataFiltered, (d) => d.sum) ])
 
-    vis.xAxisCall.scale(vis.x)
-
-    vis.xAxis.transition(vis.t()).call(vis.xAxisCall)
+    vis.xAxis.transition(vis.t()).call(d3.axisBottom(vis.x).ticks(4))
 
     vis.area0 = d3.area()
         .x((d) =>vis.x(parseTime(d.date)))
@@ -92,5 +90,6 @@ Timeline.prototype.updateVis = function(){
 
     vis.areaPath
         .data([vis.dataFiltered])
+        .transition(vis.t())
         .attr("d", vis.area);
 }

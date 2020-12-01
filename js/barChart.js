@@ -10,10 +10,13 @@ class BarChart{
     vis.width = 450 - vis.margin.left - vis.margin.right
     vis.height = 160 - vis.margin.top - vis.margin.bottom
 
-    vis.x = d3.scaleBand().range([0,vis.width]).padding(0.4)
+    vis.x = d3.scaleBand()
+              .domain(["electronics","furniture","appliances","materials"])
+              .range([0,vis.width]).padding(0.4)
+
     vis.y = d3.scaleLinear().range([vis.height,0])
 
-    vis.t = d3.transition().duration(500)
+    vis.t = ()=>d3.transition().duration(1000)
 
     
     vis.g = d3.select(vis.parentElement)
@@ -27,7 +30,9 @@ class BarChart{
     vis.xAxis = vis.g.append("g")
         .attr("class", "axis axis--x")
         .attr("transform", "translate(0," + vis.height + ")")
-        
+
+    vis.xAxisCall = d3.axisBottom().tickFormat(d=>d.charAt(0).toUpperCase() + d.slice(1))
+    vis.yAxisCall = d3.axisLeft().ticks(4)  
   
     vis.yAxis = vis.g.append("g")
         .attr("class", "axis axis--y")
@@ -63,26 +68,32 @@ class BarChart{
 
   updateVis(){
     let vis = this
-    vis.x.domain(vis.data.map(d=>d.category))
     vis.y.domain([0, d3.max(vis.data,d=>d[vis.variable])*1.05])
 
-    vis.xAxis.call(d3.axisBottom(vis.x).tickFormat(d=>d.charAt(0).toUpperCase() + d.slice(1)))
-    vis.yAxis.call(d3.axisLeft(vis.y).ticks(4))
+    vis.xAxisCall.scale(vis.x)
+    vis.xAxis.transition(vis.t()).call(vis.xAxisCall)
+    vis.yAxisCall.scale(vis.y)
+    vis.yAxis.transition(vis.t()).call(vis.yAxisCall)
+
     vis.yAxisLabel.text(vis.title)
 
-    vis.bar = vis.g.selectAll(".bar").data(vis.data)
+    vis.bar = vis.g.selectAll(".bar").data(vis.data,d=>d.category)
 
-    vis.bar.exit().transition(vis.t).remove()
+    vis.bar.exit().transition(vis.t()).remove()
 
     vis.bar.enter()
       .append("rect")
-      .merge(vis.bar)
-      .transition(vis.t)
-      .attr('x',d=>vis.x(d.category))
-      .attr('y',d=>vis.y(d[vis.variable]))
+      .attr('class','bar')
       .attr('width',vis.x.bandwidth)
-      .attr('height',d=>vis.height - vis.y(d[vis.variable]))
+      .attr('x',d=>vis.x(d.category))
+      .attr('y',vis.y(0))
+      .attr('height',d=>vis.height - vis.y(0))
       .attr('fill','grey')
+      .merge(vis.bar)
+      .transition(vis.t())
+      .attr('y',d=>vis.y(d[vis.variable]))
+      .attr('height',d=>vis.height - vis.y(d[vis.variable]))
+      
 
   }
 }

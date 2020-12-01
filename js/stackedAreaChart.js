@@ -7,7 +7,7 @@ class StackedAreaChart{
     initVis(){
         let vis = this
 
-        vis.t = d3.transition().duration(500)
+        vis.t = ()=>d3.transition().duration(1000)
 
         vis.margin = {top: 80, right: 20, bottom: 100, left: 100}
         vis.width = 800 - vis.margin.left - vis.margin.right
@@ -92,18 +92,17 @@ class StackedAreaChart{
 
         vis.layer = vis.g.selectAll(".layer").data(vis.stack(vis.data))
 
-        vis.layer.exit().transition(vis.t).remove()
+        vis.layer.exit().remove()
 
         vis.layer.enter()
             .append("path")
             .attr("class","layer")
             .attr("fill",d=>vis.z(d.key))
             .merge(vis.layer)
-            .transition(vis.t)
             .attr("d",vis.area)
 
-        vis.xAxis.transition(vis.t).call(d3.axisBottom(vis.x).ticks(10))
-        vis.yAxis.transition(vis.t).call(d3.axisLeft(vis.y).ticks(5))
+        vis.xAxis.transition(vis.t()).call(d3.axisBottom(vis.x).ticks(10))
+        vis.yAxis.transition(vis.t()).call(d3.axisLeft(vis.y).ticks(5))
     }
 
     addLegend(){
